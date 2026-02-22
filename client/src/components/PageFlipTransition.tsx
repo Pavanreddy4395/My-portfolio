@@ -38,7 +38,7 @@ export function PageFlipTransition({ children, currentPage }: PageFlipTransition
               ease: "easeInOut" 
             }
           }}
-          className="w-full h-full absolute top-0 left-0 bg-background backface-hidden"
+          className="w-full h-full absolute top-0 left-0 bg-transparent backface-hidden"
           style={{ 
             backfaceVisibility: "hidden",
             transformStyle: "preserve-3d"

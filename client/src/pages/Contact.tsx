@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Github, Linkedin, Mail, Send, MapPin } from "lucide-react";
+import { Github, Linkedin, Mail, Send, MapPin, Phone } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertMessageSchema, type InsertMessage } from "@shared/schema";
@@ -13,6 +13,10 @@ import { z } from "zod";
 
 export default function Contact() {
   const { mutate, isPending } = useCreateMessage();
+  const email = "brkreddy2005@gmail.com";
+  const phone = "+91 8106704395";
+  const githubUrl = "https://github.com/Pavanreddy4395";
+  const linkedinUrl = "https://linkedin.com";
 
   // We need to extend the schema locally if we want to add strict client-side validation messages
   // or we can use the shared schema directly. Let's use the shared one but refine it for the form.
@@ -51,7 +55,20 @@ export default function Contact() {
 
           <div className="space-y-6">
             <a 
-              href="mailto:hello@example.com" 
+              href="tel:+918106704395" 
+              className="flex items-center gap-4 p-4 rounded-xl hover:bg-secondary/50 transition-colors group"
+            >
+              <div className="p-3 bg-primary/5 rounded-full group-hover:bg-primary/10 transition-colors">
+                <Phone className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Phone</h4>
+                <p className="text-muted-foreground">{phone}</p>
+              </div>
+            </a>
+
+            <a 
+              href={`mailto:${email}`}
               className="flex items-center gap-4 p-4 rounded-xl hover:bg-secondary/50 transition-colors group"
             >
               <div className="p-3 bg-primary/5 rounded-full group-hover:bg-primary/10 transition-colors">
@@ -59,12 +76,12 @@ export default function Contact() {
               </div>
               <div>
                 <h4 className="font-semibold">Email</h4>
-                <p className="text-muted-foreground">hello@example.com</p>
+                <p className="text-muted-foreground">{email}</p>
               </div>
             </a>
             
             <a 
-              href="https://linkedin.com" 
+              href={linkedinUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 p-4 rounded-xl hover:bg-secondary/50 transition-colors group"
@@ -79,7 +96,7 @@ export default function Contact() {
             </a>
             
             <a 
-              href="https://github.com" 
+              href={githubUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 p-4 rounded-xl hover:bg-secondary/50 transition-colors group"
@@ -89,11 +106,11 @@ export default function Contact() {
               </div>
               <div>
                 <h4 className="font-semibold">GitHub</h4>
-                <p className="text-muted-foreground">Check out my code</p>
+                <p className="text-muted-foreground">github.com/Pavanreddy4395</p>
               </div>
             </a>
             
-            <div className="flex items-center gap-4 p-4 rounded-xl">
+            {/* <div className="flex items-center gap-4 p-4 rounded-xl">
               <div className="p-3 bg-primary/5 rounded-full">
                 <MapPin className="w-6 h-6 text-primary" />
               </div>
@@ -101,7 +118,7 @@ export default function Contact() {
                 <h4 className="font-semibold">Location</h4>
                 <p className="text-muted-foreground">Available Remote & Relocation</p>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -116,7 +133,7 @@ export default function Contact() {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} className="bg-background/50 h-12" />
+                        <Input placeholder="Your Name" {...field} className="bg-background/50 h-12" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -130,7 +147,7 @@ export default function Contact() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="john@example.com" {...field} className="bg-background/50 h-12" />
+                        <Input placeholder="youremail@example.com" {...field} className="bg-background/50 h-12" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -145,7 +162,7 @@ export default function Contact() {
                       <FormLabel>Message</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Tell me about your project..." 
+                          placeholder="query or message..." 
                           className="min-h-[150px] resize-none bg-background/50" 
                           {...field} 
                         />

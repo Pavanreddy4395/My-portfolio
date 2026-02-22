@@ -1,31 +1,26 @@
 import { Section } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Github, ExternalLink, ArrowRight } from "lucide-react";
+import { Github } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 
 export default function Projects() {
   const projects = [
     {
-      title: "Online Auction Platform",
-      description: "A secure, real-time bidding system allowing users to list items and place bids. Features automated auction timers and bid tracking.",
-      tags: ["Java", "Spring Boot", "React", "WebSocket"],
-      links: { demo: "#", github: "#" },
-      image: "https://images.unsplash.com/photo-1555421689-d68471e189f2?q=80&w=1000&auto=format&fit=crop" // Abstract tech/auction image
+      title: "E-Auction",
+      description:
+        "Built a scalable E-Auction platform using Spring Boot and MongoDB, featuring JWT authentication, role-based access control, and real-time bidding with WebSockets. Contributed as a Backend Developer responsible for API development and system integration.",
+      tags: ["Java", "Spring Boot", "MongoDB", "JWT", "WebSockets"],
+      links: { github: "https://github.com/Pavanreddy4395" },
+      image: "https://images.unsplash.com/photo-1526378722484-bd91ca387e72?q=80&w=1000&auto=format&fit=crop"
     },
     {
-      title: "Voting Application",
-      description: "Secure electronic voting system with real-time result visualization and robust authentication to ensure one-person-one-vote integrity.",
-      tags: ["React", "Node.js", "MongoDB", "JWT"],
-      links: { demo: "#", github: "#" },
-      image: "https://images.unsplash.com/photo-1540910419868-474947ce5dd8?q=80&w=1000&auto=format&fit=crop" // Abstract voting/community image
-    },
-    {
-      title: "Bookstore Application",
-      description: "E-commerce platform for books with inventory management, cart functionality, and admin dashboard for stock control.",
-      tags: ["Spring Boot", "MySQL", "Thymeleaf", "Bootstrap"],
-      links: { demo: "#", github: "#" },
-      image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=1000&auto=format&fit=crop" // Library/books image
+      title: "MedMaxDel",
+      description:
+        "Developed MedMaxDel, a medicine ordering platform with recurring orders for chronic care patients, automated reminders, prescription uploads, and order tracking features, contributing primarily in a frontend development role.",
+      tags: ["React", "JavaScript", "UI", "Product Work"],
+      links: { github: "https://github.com/Pavanreddy4395" },
+      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop"
     }
   ];
 
@@ -79,31 +74,23 @@ export default function Projects() {
               </CardContent>
               
               <CardFooter className="flex gap-4 pt-2">
-                <Button variant="default" size="sm" className="rounded-full px-4 gap-2">
-                  View Demo <ExternalLink className="w-3 h-3" />
-                </Button>
-                <Button variant="ghost" size="sm" className="rounded-full px-4 gap-2">
-                  Code <Github className="w-3 h-3" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full px-4 gap-2"
+                  onClick={() => window.open(project.links.github, "_blank")}
+                >
+                  GitHub <Github className="w-3 h-3" />
                 </Button>
               </CardFooter>
             </Card>
           ))}
-          
-          {/* "Coming Soon" placeholder card to balance the grid if odd number, or just as a CTA */}
-          <Card className="flex flex-col items-center justify-center p-8 border-dashed border-2 border-border/60 bg-transparent min-h-[300px]">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto">
-                <ArrowRight className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-display text-xl font-bold">More in the works</h3>
-              <p className="text-muted-foreground max-w-xs mx-auto">
-                I'm always building something new. Check back soon for more updates.
-              </p>
-              <Button variant="outline" onClick={() => window.open('https://github.com', '_blank')}>
-                Visit GitHub Profile
-              </Button>
-            </div>
-          </Card>
+        </div>
+
+        <div>
+          {/* <Button variant="outline" onClick={() => window.open("https://github.com/Pavanreddy4395", "_blank")}>
+            Visit GitHub Profile
+          </Button> */}
         </div>
       </div>
     </Section>

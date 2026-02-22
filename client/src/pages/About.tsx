@@ -1,73 +1,143 @@
 import { Section } from "@/components/Section";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Code2, Database, Layout, Server, Cpu, GraduationCap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
+
+const EducationSection = lazy(() => import("@/pages/about/EducationSection"));
+const SkillsSection = lazy(() => import("@/pages/about/SkillsSection"));
+const InternshipSection = lazy(() => import("@/pages/about/InternshipSection"));
+const AchievementsSection = lazy(() => import("@/pages/about/AchievementsSection"));
+const CodeStatsSection = lazy(() => import("@/pages/about/CodeStatsSection"));
+const CertificationsSection = lazy(() => import("@/pages/about/CertificationsSection"));
+
+type AboutSectionId = "internships" | "education" | "code-stats" | "skills" | "certifications" | "achievements";
 
 export default function About() {
-  const skills = [
-    { category: "Frontend", items: ["React", "Tailwind CSS", "TypeScript", "Framer Motion"], icon: Layout },
-    { category: "Backend", items: ["Java", "Spring Boot", "Node.js", "Express"], icon: Server },
-    { category: "Database", items: ["MongoDB", "PostgreSQL", "MySQL"], icon: Database },
-    { category: "Security", items: ["JWT", "BCrypt", "OAuth2"], icon: Code2 },
-  ];
+  const sections = useMemo(
+    () =>
+      [
+        { id: "education" as const, label: "Education", Component: EducationSection },
+        { id: "skills" as const, label: "Skills", Component: SkillsSection },
+        { id: "internships" as const, label: "Internships", Component: InternshipSection },
+        { id: "code-stats" as const, label: "Code Stats", Component: CodeStatsSection },
+        { id: "certifications" as const, label: "Certifications", Component: CertificationsSection },
+        { id: "achievements" as const, label: "Achievements", Component: AchievementsSection },
+      ],
+    []
+  );
+
+  const [open, setOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<AboutSectionId | null>(null);
+  const clearActiveTimeoutRef = useRef<number | null>(null);
+
+  const ActiveComponent = useMemo(() => {
+    if (!activeSection) return null;
+    return sections.find((s) => s.id === activeSection)?.Component ?? null;
+  }, [activeSection, sections]);
+
+  const openSection = (id: AboutSectionId) => {
+    if (clearActiveTimeoutRef.current != null) {
+      window.clearTimeout(clearActiveTimeoutRef.current);
+      clearActiveTimeoutRef.current = null;
+    }
+    setActiveSection(id);
+    setOpen(true);
+  };
+
+  const onOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) {
+      // Keep content mounted briefly so the close animation can play.
+      clearActiveTimeoutRef.current = window.setTimeout(() => {
+        setActiveSection(null);
+        clearActiveTimeoutRef.current = null;
+      }, 750);
+    }
+  };
 
   return (
     <Section>
-      <div className="space-y-16">
+      <div className="space-y-10">
         <div className="space-y-6">
           <h2 className="text-4xl md:text-5xl font-display font-bold">About Me</h2>
           <div className="h-1 w-20 bg-primary/10 rounded-full" />
           
           <div className="prose prose-lg text-muted-foreground leading-relaxed max-w-none">
             <p>
-              I am a passionate Computer Science Engineering student with a deep interest in building scalable web applications. 
-              My journey began with Java, where I learned the fundamentals of object-oriented programming, and evolved into 
-              full-stack development where I now craft seamless end-to-end experiences.
+              I’m a Computer Science Engineering student focused on cybersecurity and practical, hands-on learning.
+              I’m especially interested in purple-team work—bridging offensive and defensive approaches with a strong foundation in networking and system fundamentals.
             </p>
             <p>
-              I believe that great software is not just about code—it's about solving real problems with elegant solutions.
-              When I'm not coding, I'm exploring new technologies, contributing to open source, or refining my design sensibilities.
+              Alongside security, I also build full-stack projects with Java and modern web tooling.
+              I enjoy turning requirements into clean implementations, documenting what I learn, and steadily improving through problem-solving and certifications.
             </p>
           </div>
-          
-          <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-xl border border-border/50">
-            <div className="p-3 bg-background rounded-full shadow-sm">
-              <GraduationCap className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Education</h3>
-              <p className="text-sm text-muted-foreground">B.Tech in Computer Science & Engineering</p>
+
+          <div className="pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {sections.map((s) => (
+                <Button
+                  key={s.id}
+                  type="button"
+                  variant="secondary"
+                  onClick={() => openSection(s.id)}
+                  className="rounded-full justify-center"
+                >
+                  {s.label}
+                </Button>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="space-y-8">
-          <h3 className="text-2xl font-display font-semibold">Technical Arsenal</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {skills.map((skillGroup, idx) => (
-              <Card key={idx} className="p-6 border border-border/40 hover:border-border hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-primary/5 rounded-lg">
-                    <skillGroup.icon className="w-5 h-5 text-primary" />
+        <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay
+              className={cn(
+                "fixed inset-0 z-50",
+                "bg-black/70 backdrop-blur-sm",
+                "data-[state=open]:animate-in data-[state=open]:fade-in-0",
+                "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
+                "duration-700"
+              )}
+            />
+
+            <DialogPrimitive.Content
+              className={cn(
+                "fixed inset-0 z-50 p-4 sm:p-6 outline-none",
+                "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-6",
+                "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-bottom-6",
+                "duration-700 motion-reduce:animate-none"
+              )}
+            >
+              <div className="relative mx-auto h-full w-full max-w-5xl">
+                <DialogPrimitive.Close asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 sm:right-4 sm:top-4 z-10 rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
+                    aria-label="Close"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DialogPrimitive.Close>
+
+                <div className="h-full overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
+                  <div className="h-full overflow-y-auto p-6 sm:p-8">
+                    {ActiveComponent ? (
+                      <Suspense fallback={<div className="h-[40vh] w-full" />}>
+                        <ActiveComponent />
+                      </Suspense>
+                    ) : null}
                   </div>
-                  <h4 className="font-semibold text-lg">{skillGroup.category}</h4>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {skillGroup.items.map((skill) => (
-                    <Badge 
-                      key={skill} 
-                      variant="secondary" 
-                      className="px-3 py-1 text-sm font-normal bg-secondary/50 hover:bg-secondary border-transparent"
-                    >
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
+              </div>
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
       </div>
     </Section>
   );

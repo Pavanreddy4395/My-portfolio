@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navbar } from "@/components/Navbar";
 import { PageFlipTransition } from "@/components/PageFlipTransition";
+import { RocketBackground } from "@/components/RocketBackground";
 
 // Pages
 import Home from "@/pages/Home";
@@ -32,14 +33,16 @@ function Portfolio() {
   };
 
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground selection:bg-primary/10">
-      <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
-      
-      <main className="relative">
-        <PageFlipTransition currentPage={currentPage}>
-          {renderPage()}
-        </PageFlipTransition>
-      </main>
+    <div className="relative min-h-screen bg-transparent font-sans text-foreground selection:bg-primary/10">
+      <RocketBackground />
+
+      <div className="relative z-10">
+        <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
+
+        <main className="relative">
+          <PageFlipTransition currentPage={currentPage}>{renderPage()}</PageFlipTransition>
+        </main>
+      </div>
     </div>
   );
 }

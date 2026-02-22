@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface NavbarProps {
   currentPage: string;
@@ -14,8 +15,8 @@ export function Navbar({ currentPage, onNavigate }: NavbarProps) {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
-      <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
+    <div className="sticky top-0 z-50 w-full">
+      <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
         <div 
           className="font-display font-bold text-2xl tracking-tight cursor-pointer select-none"
           onClick={() => onNavigate("home")}
@@ -23,27 +24,27 @@ export function Navbar({ currentPage, onNavigate }: NavbarProps) {
           Portfolio.
         </div>
         
-        <ul className="flex items-center gap-8">
+        <ul className="flex items-center gap-2">
           {navItems.map((item) => (
             <li key={item.id}>
-              <button
+              <Button
                 onClick={() => onNavigate(item.id)}
+                aria-current={currentPage === item.id ? "page" : undefined}
+                variant={currentPage === item.id ? "default" : "outline"}
+                size="sm"
                 className={cn(
-                  "relative text-sm font-medium transition-colors duration-300 hover:text-primary py-2",
-                  currentPage === item.id 
-                    ? "text-primary" 
-                    : "text-muted-foreground"
+                  "rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
+                  currentPage === item.id
+                    ? "shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {item.label}
-                {currentPage === item.id && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       </div>
-    </nav>
+    </div>
   );
 }

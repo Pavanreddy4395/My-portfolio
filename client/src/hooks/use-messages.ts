@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { api, type InsertMessage } from "@shared/routes";
+import { api } from "@shared/routes";
+import type { InsertMessage } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 export function useCreateMessage() {
@@ -9,22 +10,30 @@ export function useCreateMessage() {
     mutationFn: async (data: InsertMessage) => {
       // Client-side validation using the Zod schema from shared routes
       const validated = api.messages.create.input.parse(data);
-      
-      const res = await fetch(api.messages.create.path, {
-        method: api.messages.create.method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(validated),
-      });
-      
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.messages.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
+
+      // Backend removed for now: persist locally so the UI still works.
+      const storageKey = "local_messages";
+      const existing = (() => {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          return raw ? (JSON.parse(raw) as unknown[]) : [];
+        } catch {
+          return [];
         }
-        throw new Error('Failed to send message');
+      })();
+
+      const saved = {
+        id: Date.now(),
+        ...validated,
+      };
+
+      try {
+        localStorage.setItem(storageKey, JSON.stringify([saved, ...existing]));
+      } catch {
+        // ignore quota/storage errors; still treat as "sent" for now
       }
-      
-      return api.messages.create.responses[201].parse(await res.json());
+
+      return api.messages.create.responses[201].parse(saved);
     },
     onSuccess: () => {
       toast({

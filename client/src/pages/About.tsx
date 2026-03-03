@@ -2,8 +2,6 @@ import { Section } from "@/components/Section";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
 
 const EducationSection = lazy(() => import("@/pages/about/EducationSection"));
 const SkillsSection = lazy(() => import("@/pages/about/SkillsSection"));
@@ -14,47 +12,43 @@ const CertificationsSection = lazy(() => import("@/pages/about/CertificationsSec
 
 type AboutSectionId = "internships" | "education" | "code-stats" | "skills" | "certifications" | "achievements";
 
+const FULL_BLEED_SECTIONS: AboutSectionId[] = ["education", "certifications", "achievements", "skills"];
+
 export default function About() {
   const sections = useMemo(
     () =>
       [
         { id: "education" as const, label: "Education", Component: EducationSection },
-        { id: "skills" as const, label: "Skills", Component: SkillsSection },
+        { id: "skills" as const, label: "Technical Skills", Component: SkillsSection },
         { id: "internships" as const, label: "Internships", Component: InternshipSection },
         { id: "code-stats" as const, label: "Code Stats", Component: CodeStatsSection },
         { id: "certifications" as const, label: "Certifications", Component: CertificationsSection },
-        { id: "achievements" as const, label: "Achievements", Component: AchievementsSection },
+        { id: "achievements" as const, label: "Achievements & Leadership", Component: AchievementsSection },
       ],
     []
   );
 
-  const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<AboutSectionId | null>(null);
-  const clearActiveTimeoutRef = useRef<number | null>(null);
+  const detailsScrollRef = useRef<HTMLDivElement | null>(null);
 
-  const ActiveComponent = useMemo(() => {
+  const activeMeta = useMemo(() => {
     if (!activeSection) return null;
-    return sections.find((s) => s.id === activeSection)?.Component ?? null;
+    return sections.find((s) => s.id === activeSection) ?? null;
   }, [activeSection, sections]);
 
-  const openSection = (id: AboutSectionId) => {
-    if (clearActiveTimeoutRef.current != null) {
-      window.clearTimeout(clearActiveTimeoutRef.current);
-      clearActiveTimeoutRef.current = null;
-    }
-    setActiveSection(id);
-    setOpen(true);
-  };
+  const ActiveComponent = activeMeta?.Component ?? null;
 
-  const onOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      // Keep content mounted briefly so the close animation can play.
-      clearActiveTimeoutRef.current = window.setTimeout(() => {
-        setActiveSection(null);
-        clearActiveTimeoutRef.current = null;
-      }, 750);
-    }
+  const renderAsFullBleed = useMemo(() => {
+    if (!activeSection) return false;
+    return FULL_BLEED_SECTIONS.includes(activeSection);
+  }, [activeSection]);
+
+  const openSection = (id: AboutSectionId) => {
+    setActiveSection(id);
+    // Scroll to the inline details area.
+    window.requestAnimationFrame(() => {
+      detailsScrollRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   return (
@@ -83,7 +77,10 @@ export default function About() {
                   type="button"
                   variant="secondary"
                   onClick={() => openSection(s.id)}
-                  className="rounded-full justify-center"
+                  className={cn(
+                    "rounded-full justify-center",
+                    activeSection === s.id && "ring-2 ring-primary/20"
+                  )}
                 >
                   {s.label}
                 </Button>
@@ -92,52 +89,29 @@ export default function About() {
           </div>
         </div>
 
-        <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-          <DialogPrimitive.Portal>
-            <DialogPrimitive.Overlay
-              className={cn(
-                "fixed inset-0 z-50",
-                "bg-black/70 backdrop-blur-sm",
-                "data-[state=open]:animate-in data-[state=open]:fade-in-0",
-                "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
-                "duration-700"
-              )}
-            />
+        <div ref={detailsScrollRef} className="scroll-mt-24" />
 
-            <DialogPrimitive.Content
-              className={cn(
-                "fixed inset-0 z-50 p-4 sm:p-6 outline-none",
-                "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-6",
-                "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-bottom-6",
-                "duration-700 motion-reduce:animate-none"
-              )}
-            >
-              <div className="relative mx-auto h-full w-full max-w-5xl">
-                <DialogPrimitive.Close asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 sm:right-4 sm:top-4 z-10 rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
-                    aria-label="Close"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </DialogPrimitive.Close>
-
-                <div className="h-full overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
-                  <div className="h-full overflow-y-auto p-6 sm:p-8">
-                    {ActiveComponent ? (
-                      <Suspense fallback={<div className="h-[40vh] w-full" />}>
-                        <ActiveComponent />
-                      </Suspense>
-                    ) : null}
-                  </div>
-                </div>
+        {ActiveComponent && activeMeta ? (
+          renderAsFullBleed ? (
+            <div className="space-y-10">
+              <h3 className="text-4xl md:text-5xl font-display font-bold text-center">{activeMeta.label}</h3>
+              <Suspense fallback={<div className="h-[40vh] w-full" />}>
+                <ActiveComponent />
+              </Suspense>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-border/50 px-6 py-4">
+                <h3 className="text-2xl font-display font-bold">{activeMeta.label}</h3>
               </div>
-            </DialogPrimitive.Content>
-          </DialogPrimitive.Portal>
-        </DialogPrimitive.Root>
+              <div className="p-6 sm:p-8">
+                <Suspense fallback={<div className="h-[40vh] w-full" />}>
+                  <ActiveComponent />
+                </Suspense>
+              </div>
+            </div>
+          )
+        ) : null}
       </div>
     </Section>
   );

@@ -1,37 +1,51 @@
 import { Card } from "@/components/ui/card";
-import { GraduationCap } from "lucide-react";
 
 export default function EducationSection() {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-xl border border-border/50">
-        <div className="p-3 bg-background rounded-full shadow-sm">
-          <GraduationCap className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h3 className="font-semibold text-foreground">Education</h3>
-          <p className="text-sm text-muted-foreground">B.Tech in CSE • Hyderabad, Telangana</p>
-        </div>
-      </div>
+    <div className="space-y-8">
+      <Card className="rounded-xl p-8 border border-border/40 bg-card/50 backdrop-blur-sm">
+        <div className="flex justify-between items-start flex-col md:flex-row gap-6">
+          <div className="space-y-1">
+            <h4 className="text-2xl font-semibold">Bachelor of Technology</h4>
+            <p className="text-primary">Computer Science and Engineering</p>
+            <p className="text-muted-foreground">KL University, Hyderabad</p>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 border border-border/40 bg-card/50 backdrop-blur-sm">
-          <div className="space-y-2">
-            <h4 className="font-semibold text-lg">KL University, Hyderabad</h4>
-            <p className="text-sm text-muted-foreground">May 2023 – Present • Cumulative GPA: 9.52/10.0 (current)</p>
-            <p className="text-sm text-muted-foreground">
-              Relevant Coursework: Machine Learning, Data Structures & Algorithms, DBMS, Python Full Stack Development
-            </p>
+          <div className="md:text-right space-y-1">
+            <p className="text-muted-foreground">2023 – Present</p>
+            <p className="text-primary font-semibold">CGPA: 9.52</p>
           </div>
-        </Card>
-        <Card className="p-6 border border-border/40 bg-card/50 backdrop-blur-sm">
-          <div className="space-y-2">
-            <h4 className="font-semibold text-lg">Sri Chaitanya Junior College</h4>
-            <p className="text-sm text-muted-foreground">Apr 2021 – Apr 2023 • Cumulative GPA: 932/1000</p>
-            <p className="text-sm text-muted-foreground">Relevant Coursework: Linear Algebra, Calculus, Probability</p>
+        </div>
+      </Card>
+
+      <Card className="rounded-xl p-8 border border-border/40 bg-card/50 backdrop-blur-sm">
+        <div className="flex justify-between items-start flex-col md:flex-row gap-6">
+          <div className="space-y-1">
+            <h4 className="text-2xl font-semibold">Intermediate Education</h4>
+            <p className="text-primary">Telangana Board</p>
+            <p className="text-muted-foreground">Sri Chaitanya Junior College</p>
           </div>
-        </Card>
-      </div>
+
+          <div className="md:text-right space-y-1">
+            <p className="text-muted-foreground">2021 – 2023</p>
+            <p className="text-primary font-semibold">Score: 932/1000</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="rounded-xl p-8 border border-border/40 bg-card/50 backdrop-blur-sm">
+        <div className="flex justify-between items-start flex-col md:flex-row gap-6">
+          <div className="space-y-1">
+            <h4 className="text-2xl font-semibold">10th Grade</h4>
+            <p className="text-primary">Telangana Board of Secondary Education</p>
+            <p className="text-muted-foreground">Sri Chaitanya School, Hyderabad</p>
+          </div>
+
+          <div className="md:text-right space-y-1">
+            <p className="text-muted-foreground">2011 – 2021</p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

@@ -9,7 +9,13 @@ const CertificationsSection = lazy(() => import("@/pages/about/CertificationsSec
 
 type AboutSectionId = "internships" | "education" | "skills" | "certifications" | "achievements";
 
-const FULL_BLEED_SECTIONS: AboutSectionId[] = ["education", "certifications", "achievements", "skills"];
+const FULL_BLEED_SECTIONS: AboutSectionId[] = [
+  "education",
+  "internships",
+  "certifications",
+  "achievements",
+  "skills",
+];
 
 export default function About() {
   const sections = useMemo(

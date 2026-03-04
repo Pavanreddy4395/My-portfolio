@@ -1,7 +1,5 @@
 import { Section } from "@/components/Section";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useMemo } from "react";
 
 const EducationSection = lazy(() => import("@/pages/about/EducationSection"));
 const SkillsSection = lazy(() => import("@/pages/about/SkillsSection"));
@@ -26,29 +24,6 @@ export default function About() {
     []
   );
 
-  const [activeSection, setActiveSection] = useState<AboutSectionId | null>(null);
-  const detailsScrollRef = useRef<HTMLDivElement | null>(null);
-
-  const activeMeta = useMemo(() => {
-    if (!activeSection) return null;
-    return sections.find((s) => s.id === activeSection) ?? null;
-  }, [activeSection, sections]);
-
-  const ActiveComponent = activeMeta?.Component ?? null;
-
-  const renderAsFullBleed = useMemo(() => {
-    if (!activeSection) return false;
-    return FULL_BLEED_SECTIONS.includes(activeSection);
-  }, [activeSection]);
-
-  const openSection = (id: AboutSectionId) => {
-    setActiveSection(id);
-    // Scroll to the inline details area.
-    window.requestAnimationFrame(() => {
-      detailsScrollRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  };
-
   return (
     <Section>
       <div className="space-y-10">
@@ -66,50 +41,37 @@ export default function About() {
               I enjoy turning requirements into clean implementations, documenting what I learn, and steadily improving through problem-solving and certifications.
             </p>
           </div>
-
-          <div className="pt-2">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {sections.map((s) => (
-                <Button
-                  key={s.id}
-                  type="button"
-                  variant="secondary"
-                  onClick={() => openSection(s.id)}
-                  className={cn(
-                    "rounded-full justify-center",
-                    activeSection === s.id && "ring-2 ring-primary/20"
-                  )}
-                >
-                  {s.label}
-                </Button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        <div ref={detailsScrollRef} className="scroll-mt-24" />
+        <div className="space-y-10">
+          {sections.map(({ id, label, Component }) => {
+            const renderAsFullBleed = FULL_BLEED_SECTIONS.includes(id as AboutSectionId);
 
-        {ActiveComponent && activeMeta ? (
-          renderAsFullBleed ? (
-            <div className="space-y-10">
-              <h3 className="text-4xl md:text-5xl font-display font-bold text-center">{activeMeta.label}</h3>
-              <Suspense fallback={<div className="h-[40vh] w-full" />}>
-                <ActiveComponent />
-              </Suspense>
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
-              <div className="flex items-center justify-between gap-3 border-b border-border/50 px-6 py-4">
-                <h3 className="text-2xl font-display font-bold">{activeMeta.label}</h3>
+            return (
+              <div key={id} id={id} className="scroll-mt-24">
+                {renderAsFullBleed ? (
+                  <div className="space-y-10">
+                    <h3 className="text-4xl md:text-5xl font-display font-bold text-center">{label}</h3>
+                    <Suspense fallback={<div className="h-[40vh] w-full" />}>
+                      <Component />
+                    </Suspense>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
+                    <div className="flex items-center justify-between gap-3 border-b border-border/50 px-6 py-4">
+                      <h3 className="text-2xl font-display font-bold">{label}</h3>
+                    </div>
+                    <div className="p-6 sm:p-8">
+                      <Suspense fallback={<div className="h-[40vh] w-full" />}>
+                        <Component />
+                      </Suspense>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="p-6 sm:p-8">
-                <Suspense fallback={<div className="h-[40vh] w-full" />}>
-                  <ActiveComponent />
-                </Suspense>
-              </div>
-            </div>
-          )
-        ) : null}
+            );
+          })}
+        </div>
       </div>
     </Section>
   );

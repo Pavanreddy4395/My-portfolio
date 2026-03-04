@@ -7,7 +7,7 @@ interface PageFlipTransitionProps {
 }
 
 export function PageFlipTransition({ children, currentPage }: PageFlipTransitionProps) {
-  const hideScrollbar = currentPage === "home" || currentPage === "code-stats";
+  const hideScrollbar = currentPage === "home" || currentPage === "code-stats" || currentPage === "about";
   const snapVertical = currentPage === "code-stats";
 
   return (

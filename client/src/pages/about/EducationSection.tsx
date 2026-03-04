@@ -43,6 +43,7 @@ export default function EducationSection() {
 
           <div className="md:text-right space-y-1">
             <p className="text-muted-foreground">2011 – 2021</p>
+             <p className="text-primary font-semibold">CGPA: 10</p>
           </div>
         </div>
       </Card>

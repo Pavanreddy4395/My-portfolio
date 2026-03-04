@@ -10,6 +10,7 @@ import { RocketBackground } from "@/components/RocketBackground";
 // Pages
 import Home from "@/pages/Home";
 import About from "@/pages/About";
+import CodeStats from "@/pages/CodeStats";
 import Projects from "@/pages/Projects";
 import Contact from "@/pages/Contact";
 
@@ -23,6 +24,8 @@ function Portfolio() {
         return <Home onNavigate={setCurrentPage} />;
       case "about":
         return <About />;
+      case "code-stats":
+        return <CodeStats />;
       case "projects":
         return <Projects />;
       case "contact":

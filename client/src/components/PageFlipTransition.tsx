@@ -7,6 +7,9 @@ interface PageFlipTransitionProps {
 }
 
 export function PageFlipTransition({ children, currentPage }: PageFlipTransitionProps) {
+  const hideScrollbar = currentPage === "home" || currentPage === "code-stats";
+  const snapVertical = currentPage === "code-stats";
+
   return (
     <div className="relative w-full min-h-[calc(100vh-80px)] overflow-hidden perspective-1000">
       <AnimatePresence mode="wait" initial={false}>
@@ -52,7 +55,9 @@ export function PageFlipTransition({ children, currentPage }: PageFlipTransition
             exit={{ opacity: 1 }}
           />
           
-          <div className="w-full h-full overflow-y-auto">
+          <div
+            className={`w-full h-full overflow-y-auto${hideScrollbar ? " home-hide-scrollbar" : ""}${snapVertical ? " snap-y snap-mandatory scroll-smooth" : ""}`}
+          >
             {children}
           </div>
         </motion.div>

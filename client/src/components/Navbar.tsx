@@ -10,6 +10,7 @@ export function Navbar({ currentPage, onNavigate }: NavbarProps) {
   const navItems = [
     { id: "home", label: "Home" },
     { id: "about", label: "About" },
+    { id: "code-stats", label: "Code Stats" },
     { id: "projects", label: "Projects" },
     { id: "contact", label: "Contact" },
   ];

@@ -59,6 +59,17 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Hide scrollbars while keeping scroll enabled (Home page only). */
+  .home-hide-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
+
+  .home-hide-scrollbar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
   
   /* Smooth text rendering */
   .antialiased {

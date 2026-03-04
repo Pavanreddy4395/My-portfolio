@@ -7,10 +7,9 @@ const EducationSection = lazy(() => import("@/pages/about/EducationSection"));
 const SkillsSection = lazy(() => import("@/pages/about/SkillsSection"));
 const InternshipSection = lazy(() => import("@/pages/about/InternshipSection"));
 const AchievementsSection = lazy(() => import("@/pages/about/AchievementsSection"));
-const CodeStatsSection = lazy(() => import("@/pages/about/CodeStatsSection"));
 const CertificationsSection = lazy(() => import("@/pages/about/CertificationsSection"));
 
-type AboutSectionId = "internships" | "education" | "code-stats" | "skills" | "certifications" | "achievements";
+type AboutSectionId = "internships" | "education" | "skills" | "certifications" | "achievements";
 
 const FULL_BLEED_SECTIONS: AboutSectionId[] = ["education", "certifications", "achievements", "skills"];
 
@@ -21,7 +20,6 @@ export default function About() {
         { id: "education" as const, label: "Education", Component: EducationSection },
         { id: "skills" as const, label: "Technical Skills", Component: SkillsSection },
         { id: "internships" as const, label: "Internships", Component: InternshipSection },
-        { id: "code-stats" as const, label: "Code Stats", Component: CodeStatsSection },
         { id: "certifications" as const, label: "Certifications", Component: CertificationsSection },
         { id: "achievements" as const, label: "Achievements & Leadership", Component: AchievementsSection },
       ],

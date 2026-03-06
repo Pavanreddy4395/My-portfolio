@@ -6,10 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Github, Linkedin, Mail, Send, MapPin, Phone } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertMessageSchema, type InsertMessage } from "@shared/schema";
+import { insertMessageSchema, type InsertMessage } from "@/lib/messages";
 import { useCreateMessage } from "@/hooks/use-messages";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { z } from "zod";
 
 export default function Contact() {
   const { mutate, isPending } = useCreateMessage();
@@ -18,15 +17,8 @@ export default function Contact() {
   const githubUrl = "https://github.com/Pavanreddy4395";
   const linkedinUrl = "https://linkedin.com";
 
-  // We need to extend the schema locally if we want to add strict client-side validation messages
-  // or we can use the shared schema directly. Let's use the shared one but refine it for the form.
-  const formSchema = insertMessageSchema.extend({
-    email: z.string().email("Please enter a valid email address"),
-    message: z.string().min(10, "Message must be at least 10 characters"),
-  });
-
   const form = useForm<InsertMessage>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(insertMessageSchema),
     defaultValues: {
       name: "",
       email: "",

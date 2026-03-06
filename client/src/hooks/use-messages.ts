@@ -1,6 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { api } from "@shared/routes";
-import type { InsertMessage } from "@shared/schema";
+import { insertMessageSchema, type InsertMessage } from "@/lib/messages";
 import { useToast } from "@/hooks/use-toast";
 
 export function useCreateMessage() {
@@ -8,8 +7,7 @@ export function useCreateMessage() {
   
   return useMutation({
     mutationFn: async (data: InsertMessage) => {
-      // Client-side validation using the Zod schema from shared routes
-      const validated = api.messages.create.input.parse(data);
+      const validated = insertMessageSchema.parse(data);
 
       // Backend removed for now: persist locally so the UI still works.
       const storageKey = "local_messages";
@@ -33,7 +31,7 @@ export function useCreateMessage() {
         // ignore quota/storage errors; still treat as "sent" for now
       }
 
-      return api.messages.create.responses[201].parse(saved);
+      return saved;
     },
     onSuccess: () => {
       toast({

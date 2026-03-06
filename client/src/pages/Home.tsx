@@ -182,21 +182,32 @@ export default function Home({ onNavigate }: HomeProps) {
             </h2> */}
 
             <h1
-              className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-primary tracking-tight leading-[1.1]"
+              className="relative text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display font-bold text-primary tracking-tight leading-[1.1]"
               aria-label={fullHeading}
             >
               <span className="sr-only">{fullHeading}</span>
-              <span aria-hidden="true">
+              {/*
+                Layout-stability: reserve space for the full heading so the content below
+                (buttons/paragraph) never shifts while the typing animation loops.
+              */}
+              <span className="invisible block" aria-hidden="true">
+                {headingLine1}{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50 animate-gradient">
+                  {headingLine2}
+                </span>
+              </span>
+
+              <span className="absolute inset-0" aria-hidden="true">
                 {typedLine1}
                 {!isTypingDone && typedLine1.length < headingLine1.length ? (
-                  <span className="inline-block ml-1 animate-pulse">|</span>
+                  <span className="inline-block ml-1 align-[-0.15em] h-px w-[0.6em] bg-primary animate-pulse" />
                 ) : null}
-                <br />
+                {typedLine1.length >= headingLine1.length ? " " : null}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50 animate-gradient">
                   {typedLine2}
                 </span>
                 {!isTypingDone && typedLine1.length >= headingLine1.length ? (
-                  <span className="inline-block ml-1 animate-pulse">|</span>
+                  <span className="inline-block ml-1 align-[-0.15em] h-px w-[0.6em] bg-primary animate-pulse" />
                 ) : null}
               </span>
             </h1>

@@ -39,6 +39,9 @@ def get_leetcode_stats(username: str):
           ranking
         }
       }
+      userContestRanking(username: $username) {
+        rating
+      }
     }
     """
 
@@ -50,6 +53,12 @@ def get_leetcode_stats(username: str):
     user = (payload.get("data") or {}).get("matchedUser")
     if not user:
         return {"error": "User not found"}
+
+    contest_rating = ((payload.get("data") or {}).get("userContestRanking") or {}).get("rating")
+    try:
+        contest_rating = int(round(float(contest_rating))) if contest_rating is not None else None
+    except Exception:
+        contest_rating = None
 
     ac_submission_num = ((user.get("submitStats") or {}).get("acSubmissionNum") or [])
     solved_by_difficulty = {
@@ -69,10 +78,70 @@ def get_leetcode_stats(username: str):
         "username": user.get("username") or username,
         "problems_solved": total_solved,
         "ranking": ranking,
+        "rating": contest_rating,
         "easy_solved": easy_solved,
         "medium_solved": medium_solved,
         "hard_solved": hard_solved,
     }
+
+
+def get_leetcode_rating_history(username: str, limit: int = 20):
+    if not username:
+        return {"error": "Missing username"}
+
+    query = """
+    query userContestHistory($username: String!) {
+      userContestRankingHistory(username: $username) {
+        contest {
+          startTime
+        }
+        rating
+        ranking
+      }
+    }
+    """
+
+    try:
+        payload = _post_graphql(username, query, {"username": username})
+        rows = (payload.get("data") or {}).get("userContestRankingHistory") or []
+    except Exception:
+        return {"error": "Failed to fetch LeetCode rating history"}
+
+    history: list[dict[str, object]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+
+        contest = row.get("contest")
+        start_time = contest.get("startTime") if isinstance(contest, dict) else None
+        rating = row.get("rating")
+        rank = row.get("ranking")
+
+        if start_time is None or rating is None:
+            continue
+
+        try:
+            d = datetime.fromtimestamp(int(start_time), tz=timezone.utc).date().isoformat()
+        except Exception:
+            continue
+
+        try:
+            rating_value = int(round(float(rating)))
+        except Exception:
+            continue
+
+        out: dict[str, object] = {"date": d, "rating": rating_value}
+        if rank is not None:
+            try:
+                out["rank"] = int(rank)
+            except Exception:
+                pass
+        history.append(out)
+
+    if limit and len(history) > limit:
+        history = history[-limit:]
+
+    return {"username": username, "history": history}
 
 
 def get_leetcode_calendar(username: str, days: int = 364):

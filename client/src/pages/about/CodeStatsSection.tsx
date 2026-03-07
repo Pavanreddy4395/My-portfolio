@@ -6,6 +6,7 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -37,16 +38,26 @@ type CodeforcesApiResponse = {
   max_rating?: number | null;
   rank?: string | null;
   max_rank?: string | null;
+  problems_solved?: number | null;
   error?: string;
 };
 
 type LeetcodeApiResponse = {
   username?: string;
+  rating?: number | null;
   problems_solved?: number;
   ranking?: number | null;
   easy_solved?: number;
   medium_solved?: number;
   hard_solved?: number;
+  error?: string;
+};
+
+type CodechefApiResponse = {
+  username?: string;
+  rating?: number | null;
+  stars?: string | null;
+  problems_solved?: number | null;
   error?: string;
 };
 
@@ -208,20 +219,30 @@ function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: A
   );
 }
 
+type RatingPoint = { date: string; rating: number; rank?: number };
+
 function RatingHistory({ platformId, accent, baseRating }: { platformId: string; accent: Accent; baseRating: number }) {
-  const [realHistory, setRealHistory] = useState<Array<{ date: string; rating: number }> | null>(null);
+  const [realHistory, setRealHistory] = useState<RatingPoint[] | null>(null);
 
   useEffect(() => {
-    if (platformId !== "codeforces") return;
+    const endpointByPlatform: Record<string, string> = {
+      codeforces: "/codeforces/rating-history",
+      leetcode: "/leetcode/rating-history",
+      codechef: "/codechef/rating-history",
+    };
 
-    fetch(apiUrl("/codeforces/rating-history"))
+    const endpoint = endpointByPlatform[platformId];
+    if (!endpoint) return;
+
+    fetch(apiUrl(endpoint))
       .then((res) => res.json())
-      .then((data: { history?: Array<{ date: string; rating: number }>; error?: string }) => {
+      .then((data: { history?: RatingPoint[]; error?: string }) => {
         if (data?.error) {
           setRealHistory(null);
           return;
         }
         if (Array.isArray(data?.history) && data.history.length) setRealHistory(data.history);
+        else setRealHistory(null);
       })
       .catch(() => {
         setRealHistory(null);
@@ -233,12 +254,26 @@ function RatingHistory({ platformId, accent, baseRating }: { platformId: string;
       return realHistory;
     }
 
+    // For platforms where we don't have a real history (or the user has no contests),
+    // avoid random drift to keep the chart stable and "proper".
+    if (platformId === "leetcode" || platformId === "codechef") {
+      const points = 20;
+      const start = new Date("2025-06-15T00:00:00Z");
+      const out: RatingPoint[] = [];
+      for (let i = 0; i < points; i += 1) {
+        const d = new Date(start);
+        d.setUTCDate(start.getUTCDate() + i * 14);
+        out.push({ date: d.toISOString().slice(0, 10), rating: baseRating });
+      }
+      return out;
+    }
+
     const rand = mulberry32(hashString(`history:${platformId}`));
     const points = 20;
     const start = new Date("2025-06-15T00:00:00Z");
     let current = baseRating;
 
-    const out: Array<{ date: string; rating: number }> = [];
+    const out: RatingPoint[] = [];
     for (let i = 0; i < points; i += 1) {
       const drift = (rand() - 0.48) * 80;
       current = Math.max(0, Math.round(current + drift));
@@ -269,12 +304,36 @@ function RatingHistory({ platformId, accent, baseRating }: { platformId: string;
               axisLine={{ stroke: "hsl(var(--border) / 0.6)" }}
               width={38}
             />
+            <Tooltip
+              cursor={{ stroke: "hsl(var(--border) / 0.6)", strokeWidth: 1 }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const point = payload[0]?.payload as RatingPoint | undefined;
+                if (!point) return null;
+
+                return (
+                  <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-mono text-foreground shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">rating :</span>
+                      <span className="tabular-nums">{Math.round(point.rating)}</span>
+                    </div>
+                    {typeof point.rank === "number" ? (
+                      <div className="mt-1 flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">rank :</span>
+                        <span className="tabular-nums">{point.rank}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              }}
+            />
             <Line
               type="monotone"
               dataKey="rating"
               stroke="currentColor"
               strokeWidth={2.5}
               dot={false}
+              activeDot={{ r: 5, stroke: "currentColor", strokeWidth: 2, fill: "hsl(var(--background))" }}
               isAnimationActive={false}
             />
           </LineChart>
@@ -330,6 +389,7 @@ function PlatformPanel({ platform, className }: { platform: Platform; className?
 export default function CodeStatsSection() {
   const [codeforcesStats, setCodeforcesStats] = useState<CodeforcesApiResponse | null>(null);
   const [leetcodeStats, setLeetcodeStats] = useState<LeetcodeApiResponse | null>(null);
+  const [codechefStats, setCodechefStats] = useState<CodechefApiResponse | null>(null);
 
   useEffect(() => {
     fetch(apiUrl("/codeforces"))
@@ -351,6 +411,17 @@ export default function CodeStatsSection() {
       })
       .catch(() => {
         setLeetcodeStats({ error: "Failed to load" });
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch(apiUrl("/codechef"))
+      .then((res) => res.json())
+      .then((data: CodechefApiResponse) => {
+        setCodechefStats(data);
+      })
+      .catch(() => {
+        setCodechefStats({ error: "Failed to load" });
       });
   }, []);
 
@@ -384,12 +455,12 @@ export default function CodeStatsSection() {
       title: "CodeChef",
       accent: "primary",
       stats: [
-        { label: "Rating", value: "1405" },
-        { label: "Problems Solved", value: "250+" },
-        { label: "Last Active", value: "—" },
-        { label: "Data Points", value: "—" },
+        { label: "Rating", value: codechefStats?.rating ?? "—" },
+        { label: "Problems Solved", value: codechefStats?.problems_solved ?? "—" },
+        { label: "Stars", value: 1},
+        // { label: "Data Points", value: "—" },
       ],
-      historyBase: 1200,
+      historyBase: codechefStats?.rating ?? 1200,
     },
     {
       id: "codeforces",
@@ -398,7 +469,7 @@ export default function CodeStatsSection() {
       stats: [
         { label: "Rating", value: codeforcesStats?.rating ?? "—" },
         { label: "Max Rating", value: codeforcesStats?.max_rating ?? "—" },
-        { label: "Rank", value: codeforcesStats?.rank ?? "—" },
+        { label: "Problems Solved", value: codeforcesStats?.problems_solved ?? "—" },
         { label: "Max Rank", value: codeforcesStats?.max_rank ?? "—" },
       ],
       historyBase: 1400,
@@ -408,13 +479,13 @@ export default function CodeStatsSection() {
       title: "LeetCode",
       accent: "away",
       stats: [
+        { label: "Rating", value: leetcodeStats?.rating ?? "—" },
         { label: "Problems Solved", value: leetcodeStats?.problems_solved ?? "—" },
         { label: "Global Ranking", value: leetcodeStats?.ranking ?? "—" },
-        { label: "Easy Solved", value: leetcodeStats?.easy_solved ?? "—" },
-        { label: "Medium Solved", value: leetcodeStats?.medium_solved ?? "—" },
-        { label: "Hard Solved", value: leetcodeStats?.hard_solved ?? "—" },
+        // { label: "Medium Solved", value: leetcodeStats?.medium_solved ?? "—" },
+        // { label: "Hard Solved", value: leetcodeStats?.hard_solved ?? "—" },
       ],
-      historyBase: 1500,
+      historyBase: (leetcodeStats?.rating ?? 1500) as number,
     },
   ];
 

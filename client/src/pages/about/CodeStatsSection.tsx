@@ -5,6 +5,11 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -118,29 +123,147 @@ function getHeatmapLevelClasses(accent: Accent) {
   ] as const;
 }
 
+function isoDateUTC(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfUtcYear(year: number) {
+  return new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+}
+
+function endOfUtcYear(year: number) {
+  return new Date(Date.UTC(year, 11, 31, 0, 0, 0, 0));
+}
+
+function addUtcDays(date: Date, days: number) {
+  const out = new Date(date);
+  out.setUTCDate(out.getUTCDate() + days);
+  return out;
+}
+
+function getUtcDayIndex(date: Date) {
+  // 0=Sun..6=Sat
+  return date.getUTCDay();
+}
+
+type CalendarByDate = Record<string, number>;
+
+function tryhackmeFallbackCount(platformId: string, dateKey: string) {
+  // Stable-ish distribution: mostly 0, sometimes 1/2/3.
+  const h = hashString(`${platformId}:${dateKey}`) % 100;
+  if (h < 80) return 0;
+  if (h < 92) return 1;
+  if (h < 97) return 2;
+  return 3;
+}
+
 function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: Accent }) {
   const levels = getHeatmapLevelClasses(accent);
 
   const [realCounts, setRealCounts] = useState<number[] | null>(null);
+  const [realByDate, setRealByDate] = useState<CalendarByDate | null>(null);
 
   useEffect(() => {
-    if (platformId !== "leetcode") return;
-
-    fetch(apiUrl("/leetcode/calendar"))
-      .then((res) => res.json())
-      .then((data: { counts?: number[]; error?: string }) => {
-        if (data?.error) {
+    if (platformId === "leetcode") {
+      fetch(apiUrl("/leetcode/calendar"))
+        .then((res) => res.json())
+        .then((data: { counts?: number[]; error?: string }) => {
+          if (data?.error) {
+            setRealCounts(null);
+            return;
+          }
+          if (Array.isArray(data?.counts)) setRealCounts(data.counts);
+        })
+        .catch(() => {
           setRealCounts(null);
-          return;
-        }
-        if (Array.isArray(data?.counts)) setRealCounts(data.counts);
-      })
-      .catch(() => {
-        setRealCounts(null);
-      });
+        });
+      return;
+    }
+
+    if (platformId === "tryhackme") {
+      fetch(apiUrl("/tryhackme/calendar"))
+        .then((res) => res.json())
+        .then((data: { counts_by_date?: CalendarByDate; error?: string }) => {
+          if (data?.error) {
+            setRealByDate(null);
+            return;
+          }
+          if (data?.counts_by_date && typeof data.counts_by_date === "object") {
+            setRealByDate(data.counts_by_date);
+          } else {
+            setRealByDate(null);
+          }
+        })
+        .catch(() => {
+          setRealByDate(null);
+        });
+    }
   }, [platformId]);
 
+  const tryhackme = useMemo(() => {
+    if (platformId !== "tryhackme") return null;
+
+    const today = new Date();
+    const year = today.getUTCFullYear();
+    const yearStart = startOfUtcYear(year);
+    const yearEnd = endOfUtcYear(year);
+
+    const gridStart = addUtcDays(yearStart, -getUtcDayIndex(yearStart));
+    const gridEnd = addUtcDays(yearEnd, 6 - getUtcDayIndex(yearEnd));
+
+    const dates: Date[] = [];
+    for (let d = new Date(gridStart); d <= gridEnd; d = addUtcDays(d, 1)) {
+      dates.push(d);
+    }
+
+    const todayKey = isoDateUTC(today);
+    const yearStartKey = isoDateUTC(yearStart);
+    const yearEndKey = isoDateUTC(yearEnd);
+
+    const counts: number[] = [];
+    const inYear: boolean[] = [];
+    const isFuture: boolean[] = [];
+
+    let totalEvents = 0;
+
+    for (const date of dates) {
+      const key = isoDateUTC(date);
+      const within = key >= yearStartKey && key <= yearEndKey;
+      const future = key > todayKey;
+
+      inYear.push(within);
+      isFuture.push(future);
+
+      if (!within || future) {
+        counts.push(0);
+        continue;
+      }
+
+      const raw = realByDate?.[key];
+      const c = typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : tryhackmeFallbackCount(platformId, key);
+      counts.push(c);
+      totalEvents += c;
+    }
+
+    // Month labels (Jan..Dec) positioned by week-column.
+    const weekCount = Math.ceil(dates.length / 7);
+    const monthLabels: { label: string; weekIndex: number }[] = [];
+    for (let month = 0; month < 12; month += 1) {
+      const monthStart = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+      if (monthStart < gridStart || monthStart > gridEnd) continue;
+      const dayOffset = Math.floor((monthStart.getTime() - gridStart.getTime()) / 86400000);
+      monthLabels.push({
+        label: monthStart.toLocaleString("en-US", { month: "short", timeZone: "UTC" }),
+        weekIndex: Math.floor(dayOffset / 7),
+      });
+    }
+
+    return { dates, counts, inYear, isFuture, totalEvents, weekCount, monthLabels };
+  }, [platformId, realByDate]);
+
   const cells = useMemo(() => {
+    if (platformId === "tryhackme") return [];
+
     const weeks = 52;
     const days = 7;
     const cellCount = weeks * days;
@@ -173,6 +296,91 @@ function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: A
 
   const monthLabels = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
   const weekLabelPositions = [2, 6, 10, 14, 18, 23, 27, 32, 36, 41, 46, 50];
+
+  if (tryhackme) {
+    const thmLevels = [
+      "bg-muted/30",
+      levels[2],
+      levels[3],
+      levels[4],
+    ] as const;
+
+    return (
+      <div className="w-full min-w-0 rounded-lg border border-border/60 bg-background/5 p-3 overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted-foreground">
+            <span className="text-foreground">Key</span>
+
+            <div className="flex items-center gap-1.5">
+              <div className={cn("h-[10px] w-[10px] rounded-[2px]", thmLevels[0])} aria-hidden />
+              <span>No activity</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <div className={cn("h-[10px] w-[10px] rounded-[2px]", thmLevels[1])} aria-hidden />
+              <span>1 event</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <div className={cn("h-[10px] w-[10px] rounded-[2px]", thmLevels[2])} aria-hidden />
+              <span>2 events</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <div className={cn("h-[10px] w-[10px] rounded-[2px]", thmLevels[3])} aria-hidden />
+              <span>≥3 events</span>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-border/60 bg-background/40 px-3 py-1.5 text-[12px] font-mono text-foreground">
+            <span className="text-muted-foreground">Total events this year</span>
+            <span className="ml-2 tabular-nums font-semibold">{616}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-[28px,1fr] gap-2 min-w-0">
+          <div />
+          <div className="relative h-4 min-w-0">
+            {tryhackme.monthLabels.map(({ label, weekIndex }) => (
+              <div
+                key={label}
+                className="absolute top-0 text-[10px] font-mono text-muted-foreground select-none"
+                style={{ left: `${(weekIndex / tryhackme.weekCount) * 100}%` }}
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-5 pt-1">
+            <div className="text-[10px] font-mono text-muted-foreground">Tue</div>
+            <div className="text-[10px] font-mono text-muted-foreground">Thu</div>
+            <div className="text-[10px] font-mono text-muted-foreground">Sat</div>
+          </div>
+
+          <div className="grid grid-flow-col grid-rows-7 gap-[2px] min-w-0">
+            {tryhackme.counts.map((count, idx) => {
+              const withinYear = tryhackme.inYear[idx];
+              const future = tryhackme.isFuture[idx];
+              const clamped = count >= 3 ? 3 : count;
+              const level = future ? 0 : clamped;
+              return (
+                <div
+                  key={idx}
+                  className={cn(
+                    "h-[10px] w-[10px] rounded-[2px]",
+                    !withinYear ? "opacity-40" : "opacity-100",
+                    thmLevels[level]
+                  )}
+                  aria-hidden
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-w-0 rounded-lg border border-border/60 bg-background/5 p-3 overflow-hidden">
@@ -220,6 +428,16 @@ function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: A
 }
 
 type RatingPoint = { date: string; rating: number; rank?: number };
+
+type TryHackMeSkillPoint = {
+  label: string;
+  value: number;
+};
+
+type PicoCTFSkillPoint = {
+  label: string;
+  value: number;
+};
 
 function RatingHistory({ platformId, accent, baseRating }: { platformId: string; accent: Accent; baseRating: number }) {
   const [realHistory, setRealHistory] = useState<RatingPoint[] | null>(null);
@@ -343,6 +561,162 @@ function RatingHistory({ platformId, accent, baseRating }: { platformId: string;
   );
 }
 
+function TryHackMeSkillsMatrix({ accent }: { accent: Accent }) {
+  const [skills, setSkills] = useState<TryHackMeSkillPoint[] | null>(null);
+
+  useEffect(() => {
+    fetch(apiUrl("/tryhackme/skills"))
+      .then((res) => res.json())
+      .then((data: { skills?: Record<string, number>; error?: string }) => {
+        if (data?.error || !data?.skills) {
+          setSkills(null);
+          return;
+        }
+
+        const normalized: TryHackMeSkillPoint[] = Object.entries(data.skills)
+          .map(([label, value]) => ({
+            label,
+            value: typeof value === "number" && Number.isFinite(value) ? value : 0,
+          }))
+          .filter((p) => p.label);
+
+        setSkills(normalized.length ? normalized : null);
+      })
+      .catch(() => {
+        setSkills(null);
+      });
+  }, []);
+
+  const data = useMemo(() => {
+    if (skills?.length) return skills;
+
+    // Static fallback (keeps UI working even if the backend isn't wired yet).
+    return [
+      { label: "Security\nOperations →", value: 52 },
+      { label: "Incident\nresponse →", value: 46 },
+      { label: "Malware\nAnalysis →", value: 58 },
+      { label: "Penetration\nTesting →", value: 64 },
+      { label: "Exploitation →", value: 40 },
+      { label: "Red\nTeaming →", value: 86 },
+    ] satisfies TryHackMeSkillPoint[];
+  }, [skills]);
+
+  const strokeClass = getAccentTextClass(accent);
+
+  return (
+    <div className={cn("w-full rounded-lg border border-border/60 bg-background/5 p-3", strokeClass)}>
+      <div className="h-[220px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={data} outerRadius="78%">
+            <PolarGrid stroke="hsl(var(--border) / 0.35)" />
+            <PolarAngleAxis
+              dataKey="label"
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}
+            />
+            <PolarRadiusAxis
+              angle={90}
+              domain={[0, 100]}
+              tick={false}
+              axisLine={false}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const point = payload[0]?.payload as TryHackMeSkillPoint | undefined;
+                if (!point) return null;
+
+                return (
+                  <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-mono text-foreground shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">skill :</span>
+                      <span className="text-right">{String(point.label).replace(/\s*→\s*$/, "")}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">score :</span>
+                      <span className="tabular-nums">{Math.round(point.value)}</span>
+                    </div>
+                  </div>
+                );
+              }}
+            />
+            <Radar
+              dataKey="value"
+              stroke="currentColor"
+              fill="currentColor"
+              fillOpacity={0.25}
+              strokeWidth={2.5}
+              isAnimationActive={false}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function PicoCTFSkillsMatrix({ accent }: { accent: Accent }) {
+  const data = useMemo(() => {
+    return [
+      { label: "Forensics", value: 2 },
+      { label: "Cryptography", value: 2 },
+      { label: "Core \nSkills", value: 10 },
+    ] satisfies PicoCTFSkillPoint[];
+  }, []);
+
+  const maxValue = useMemo(() => data.reduce((acc, p) => (p.value > acc ? p.value : acc), 0) || 1, [data]);
+  const strokeClass = getAccentTextClass(accent);
+
+  return (
+    <div className={cn("w-full rounded-lg border border-border/60 bg-background/5 p-3", strokeClass)}>
+      <div className="h-[220px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={data} outerRadius="78%">
+            <PolarGrid stroke="hsl(var(--border) / 0.35)" />
+            <PolarAngleAxis
+              dataKey="label"
+              tick={{
+                fill: "hsl(var(--muted-foreground))",
+                fontSize: 11,
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+              }}
+            />
+            <PolarRadiusAxis angle={90} domain={[0, Math.max(10, maxValue)]} tick={false} axisLine={false} />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const point = payload[0]?.payload as PicoCTFSkillPoint | undefined;
+                if (!point) return null;
+
+                return (
+                  <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-mono text-foreground shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">category :</span>
+                      <span className="text-right">{String(point.label).replace(/\s+/g, " ")}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">solved :</span>
+                      <span className="tabular-nums">{Math.round(point.value)}</span>
+                    </div>
+                  </div>
+                );
+              }}
+            />
+            <Radar
+              dataKey="value"
+              stroke="currentColor"
+              fill="currentColor"
+              fillOpacity={0.25}
+              strokeWidth={2.5}
+              isAnimationActive={false}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 function PlatformPanel({ platform, className }: { platform: Platform; className?: string }) {
   const statsGridClassName =
     platform.stats.length > 4
@@ -357,7 +731,7 @@ function PlatformPanel({ platform, className }: { platform: Platform; className?
       )}
     >
       <div className="space-y-5">
-        <h3 className={cn("text-2xl font-display font-bold", getAccentTextClass(platform.accent))}>
+        <h3 className={cn("text-2xl font-display font-bold text-center", getAccentTextClass(platform.accent))}>
           {platform.title}
         </h3>
 
@@ -368,19 +742,33 @@ function PlatformPanel({ platform, className }: { platform: Platform; className?
           ))}
         </div>
 
-        <div className="space-y-3">
-          <div className="text-sm font-mono tracking-wide text-muted-foreground">Activity Heatmap</div>
-          <ActivityHeatmap platformId={platform.id} accent={platform.accent} />
-        </div>
+        {platform.id === "picoctf" ? null : (
+          <div className="space-y-3">
+            <div className="text-sm font-mono tracking-wide text-muted-foreground">Activity Heatmap</div>
+            <ActivityHeatmap platformId={platform.id} accent={platform.accent} />
+          </div>
+        )}
 
-        <div className="space-y-3">
-          <div className="text-sm font-mono tracking-wide text-muted-foreground">Rating History</div>
-          <RatingHistory
-            platformId={platform.id}
-            accent={platform.accent}
-            baseRating={platform.historyBase ?? 1200}
-          />
-        </div>
+        {platform.id === "tryhackme" ? (
+          <div className="space-y-3">
+            <div className="text-sm font-mono tracking-wide text-muted-foreground">Skills Matrix</div>
+            <TryHackMeSkillsMatrix accent={platform.accent} />
+          </div>
+        ) : platform.id === "picoctf" ? (
+          <div className="space-y-3">
+            <div className="text-sm font-mono tracking-wide text-muted-foreground">Skills Matrix</div>
+            <PicoCTFSkillsMatrix accent={platform.accent} />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="text-sm font-mono tracking-wide text-muted-foreground">Rating History</div>
+            <RatingHistory
+              platformId={platform.id}
+              accent={platform.accent}
+              baseRating={platform.historyBase ?? 1200}
+            />
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -431,24 +819,12 @@ export default function CodeStatsSection() {
       title: "TryHackMe",
       accent: "primary",
       stats: [
-        { label: "Rank", value: "—" },
-        { label: "Rooms Completed", value: "—" },
-        { label: "Badges", value: "—" },
-        { label: "Data Points", value: "—" },
+        { label: "Rank", value: "164086 (top 8%)" },
+        { label: "Rooms Completed", value: 74 },
+        { label: "Badges", value: 12 },
+        { label: "Streak", value: 94 },
       ],
       historyBase: 900,
-    },
-    {
-      id: "picoctf",
-      title: "PicoCTF",
-      accent: "primary",
-      stats: [
-        { label: "Challenges", value: "—" },
-        { label: "Score", value: "—" },
-        { label: "Rank", value: "—" },
-        { label: "Data Points", value: "—" },
-      ],
-      historyBase: 800,
     },
     {
       id: "codechef",
@@ -486,6 +862,18 @@ export default function CodeStatsSection() {
         // { label: "Hard Solved", value: leetcodeStats?.hard_solved ?? "—" },
       ],
       historyBase: (leetcodeStats?.rating ?? 1500) as number,
+    },
+    {
+      id: "picoctf",
+      title: "PicoCTF",
+      accent: "primary",
+      stats: [
+        { label: "Total Solved", value: 13 },
+        { label: "Forensics", value: 2 },
+        { label: "Cryptography", value: 2 },
+        { label: "Core Skills", value: 10 },
+      ],
+      historyBase: 800,
     },
   ];
 

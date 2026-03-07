@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -12,6 +12,9 @@ import {
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
+const apiUrl = (path: string) => `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
 
 type Stat = {
   label: string;
@@ -26,6 +29,25 @@ type Platform = {
   accent: Accent;
   stats: Stat[];
   historyBase?: number;
+};
+
+type CodeforcesApiResponse = {
+  handle?: string;
+  rating?: number | null;
+  max_rating?: number | null;
+  rank?: string | null;
+  max_rank?: string | null;
+  error?: string;
+};
+
+type LeetcodeApiResponse = {
+  username?: string;
+  problems_solved?: number;
+  ranking?: number | null;
+  easy_solved?: number;
+  medium_solved?: number;
+  hard_solved?: number;
+  error?: string;
 };
 
 function StatBox({ label, value }: Stat) {
@@ -88,22 +110,55 @@ function getHeatmapLevelClasses(accent: Accent) {
 function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: Accent }) {
   const levels = getHeatmapLevelClasses(accent);
 
+  const [realCounts, setRealCounts] = useState<number[] | null>(null);
+
+  useEffect(() => {
+    if (platformId !== "leetcode") return;
+
+    fetch(apiUrl("/leetcode/calendar"))
+      .then((res) => res.json())
+      .then((data: { counts?: number[]; error?: string }) => {
+        if (data?.error) {
+          setRealCounts(null);
+          return;
+        }
+        if (Array.isArray(data?.counts)) setRealCounts(data.counts);
+      })
+      .catch(() => {
+        setRealCounts(null);
+      });
+  }, [platformId]);
+
   const cells = useMemo(() => {
-    const rand = mulberry32(hashString(`heatmap:${platformId}`));
     const weeks = 52;
     const days = 7;
-    const out: number[] = [];
+    const cellCount = weeks * days;
 
+    if (realCounts && realCounts.length >= cellCount) {
+      const window = realCounts.slice(realCounts.length - cellCount);
+      const max = window.reduce((acc, v) => (v > acc ? v : acc), 0);
+      const denom = max || 1;
+      return window.map((count) => {
+        const t = count / denom;
+        if (t <= 0) return 0;
+        if (t <= 0.25) return 1;
+        if (t <= 0.5) return 2;
+        if (t <= 0.75) return 3;
+        return 4;
+      });
+    }
+
+    const rand = mulberry32(hashString(`heatmap:${platformId}`));
+    const out: number[] = [];
     for (let w = 0; w < weeks; w += 1) {
       for (let d = 0; d < days; d += 1) {
         const r = rand();
-        const v =
-          r < 0.86 ? 0 : r < 0.91 ? 1 : r < 0.95 ? 2 : r < 0.98 ? 3 : 4;
+        const v = r < 0.86 ? 0 : r < 0.91 ? 1 : r < 0.95 ? 2 : r < 0.98 ? 3 : 4;
         out.push(v);
       }
     }
     return out;
-  }, [platformId]);
+  }, [platformId, realCounts]);
 
   const monthLabels = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
   const weekLabelPositions = [2, 6, 10, 14, 18, 23, 27, 32, 36, 41, 46, 50];
@@ -154,7 +209,30 @@ function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: A
 }
 
 function RatingHistory({ platformId, accent, baseRating }: { platformId: string; accent: Accent; baseRating: number }) {
+  const [realHistory, setRealHistory] = useState<Array<{ date: string; rating: number }> | null>(null);
+
+  useEffect(() => {
+    if (platformId !== "codeforces") return;
+
+    fetch(apiUrl("/codeforces/rating-history"))
+      .then((res) => res.json())
+      .then((data: { history?: Array<{ date: string; rating: number }>; error?: string }) => {
+        if (data?.error) {
+          setRealHistory(null);
+          return;
+        }
+        if (Array.isArray(data?.history) && data.history.length) setRealHistory(data.history);
+      })
+      .catch(() => {
+        setRealHistory(null);
+      });
+  }, [platformId]);
+
   const data = useMemo(() => {
+    if (realHistory && realHistory.length) {
+      return realHistory;
+    }
+
     const rand = mulberry32(hashString(`history:${platformId}`));
     const points = 20;
     const start = new Date("2025-06-15T00:00:00Z");
@@ -170,7 +248,7 @@ function RatingHistory({ platformId, accent, baseRating }: { platformId: string;
     }
 
     return out;
-  }, [platformId, baseRating]);
+  }, [platformId, baseRating, realHistory]);
 
   return (
     <div className={cn("w-full rounded-lg border border-border/60 bg-background/5 p-3", getAccentTextClass(accent))}>
@@ -207,6 +285,11 @@ function RatingHistory({ platformId, accent, baseRating }: { platformId: string;
 }
 
 function PlatformPanel({ platform, className }: { platform: Platform; className?: string }) {
+  const statsGridClassName =
+    platform.stats.length > 4
+      ? "grid grid-cols-2 md:grid-cols-3 gap-6 items-stretch"
+      : "grid grid-cols-2 gap-6 items-stretch";
+
   return (
     <Card
       className={cn(
@@ -220,7 +303,7 @@ function PlatformPanel({ platform, className }: { platform: Platform; className?
         </h3>
 
         {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch"> */}
-        <div className="grid grid-cols-2 gap-6 items-stretch">
+        <div className={statsGridClassName}>
           {platform.stats.map((stat) => (
             <StatBox key={stat.label} label={stat.label} value={stat.value} />
           ))}
@@ -245,6 +328,32 @@ function PlatformPanel({ platform, className }: { platform: Platform; className?
 }
 
 export default function CodeStatsSection() {
+  const [codeforcesStats, setCodeforcesStats] = useState<CodeforcesApiResponse | null>(null);
+  const [leetcodeStats, setLeetcodeStats] = useState<LeetcodeApiResponse | null>(null);
+
+  useEffect(() => {
+    fetch(apiUrl("/codeforces"))
+      .then((res) => res.json())
+      .then((data: CodeforcesApiResponse) => {
+        console.log(data);
+        setCodeforcesStats(data);
+      })
+      .catch(() => {
+        setCodeforcesStats({ error: "Failed to load" });
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch(apiUrl("/leetcode"))
+      .then((res) => res.json())
+      .then((data: LeetcodeApiResponse) => {
+        setLeetcodeStats(data);
+      })
+      .catch(() => {
+        setLeetcodeStats({ error: "Failed to load" });
+      });
+  }, []);
+
   const platforms: Platform[] = [
     {
       id: "tryhackme",
@@ -287,10 +396,10 @@ export default function CodeStatsSection() {
       title: "Codeforces",
       accent: "primary",
       stats: [
-        { label: "Rating", value: "1999" },
-        { label: "Problems Solved", value: "115" },
-        { label: "Last Active", value: "17 Jan 2026, 21:52" },
-        { label: "Data Points", value: "148" },
+        { label: "Rating", value: codeforcesStats?.rating ?? "—" },
+        { label: "Max Rating", value: codeforcesStats?.max_rating ?? "—" },
+        { label: "Rank", value: codeforcesStats?.rank ?? "—" },
+        { label: "Max Rank", value: codeforcesStats?.max_rank ?? "—" },
       ],
       historyBase: 1400,
     },
@@ -299,10 +408,11 @@ export default function CodeStatsSection() {
       title: "LeetCode",
       accent: "away",
       stats: [
-        { label: "Rating", value: "1331" },
-        { label: "Problems Solved", value: "142" },
-        { label: "Last Active", value: "18 Jan 2026, 09:09" },
-        { label: "Data Points", value: "20" },
+        { label: "Problems Solved", value: leetcodeStats?.problems_solved ?? "—" },
+        { label: "Global Ranking", value: leetcodeStats?.ranking ?? "—" },
+        { label: "Easy Solved", value: leetcodeStats?.easy_solved ?? "—" },
+        { label: "Medium Solved", value: leetcodeStats?.medium_solved ?? "—" },
+        { label: "Hard Solved", value: leetcodeStats?.hard_solved ?? "—" },
       ],
       historyBase: 1500,
     },

@@ -19,8 +19,14 @@ import {
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
-const apiUrl = (path: string) => `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "https://my-portfolio-iah4.onrender.com";
+
+const apiUrl = (path: string) => {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+};
 
 type Stat = {
   label: string;
@@ -165,7 +171,7 @@ function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: A
 
   useEffect(() => {
     if (platformId === "leetcode") {
-      fetch(apiUrl("https://my-portfolio-iah4.onrender.com/leetcode/calendar"))
+      fetch(apiUrl("/leetcode/calendar"))
         .then((res) => res.json())
         .then((data: { counts?: number[]; error?: string }) => {
           if (data?.error) {
@@ -780,7 +786,7 @@ export default function CodeStatsSection() {
   const [codechefStats, setCodechefStats] = useState<CodechefApiResponse | null>(null);
 
   useEffect(() => {
-    fetch(apiUrl("https://my-portfolio-iah4.onrender.com/codeforces"))
+    fetch(apiUrl("/codeforces"))
       .then((res) => res.json())
       .then((data: CodeforcesApiResponse) => {
         console.log(data);
@@ -792,7 +798,7 @@ export default function CodeStatsSection() {
   }, []);
 
   useEffect(() => {
-    fetch(apiUrl("https://my-portfolio-iah4.onrender.com/leetcode"))
+    fetch(apiUrl("/leetcode"))
       .then((res) => res.json())
       .then((data: LeetcodeApiResponse) => {
         setLeetcodeStats(data);
@@ -803,7 +809,7 @@ export default function CodeStatsSection() {
   }, []);
 
   useEffect(() => {
-    fetch(apiUrl("https://my-portfolio-iah4.onrender.com/codechef"))
+    fetch(apiUrl("/codechef"))
       .then((res) => res.json())
       .then((data: CodechefApiResponse) => {
         setCodechefStats(data);

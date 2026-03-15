@@ -234,7 +234,7 @@ Bridging red and blue team methodologies.
                 className="rounded-full px-8 py-6 text-base font-medium border-2 hover:bg-secondary/50 transition-all duration-300"
                 onClick={() =>
                   window.open(
-                    "https://drive.google.com/file/d/1FGrmTTZdRtGSatptx5CUwHa5NCbUBM8e/view?usp=sharing",
+                    "https://drive.google.com/file/d/1fRO9SFb_IicoTptrloQhD4lHWYKplrFF/view?usp=sharing",
                     "_blank"
                   )
                 }

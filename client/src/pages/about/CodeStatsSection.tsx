@@ -165,7 +165,7 @@ function ActivityHeatmap({ platformId, accent }: { platformId: string; accent: A
 
   useEffect(() => {
     if (platformId === "leetcode") {
-      fetch(apiUrl("/leetcode/calendar"))
+      fetch(apiUrl("https://my-portfolio-iah4.onrender.com/leetcode/calendar"))
         .then((res) => res.json())
         .then((data: { counts?: number[]; error?: string }) => {
           if (data?.error) {
@@ -780,7 +780,7 @@ export default function CodeStatsSection() {
   const [codechefStats, setCodechefStats] = useState<CodechefApiResponse | null>(null);
 
   useEffect(() => {
-    fetch(apiUrl("/codeforces"))
+    fetch(apiUrl("https://my-portfolio-iah4.onrender.com/codeforces"))
       .then((res) => res.json())
       .then((data: CodeforcesApiResponse) => {
         console.log(data);
@@ -792,7 +792,7 @@ export default function CodeStatsSection() {
   }, []);
 
   useEffect(() => {
-    fetch(apiUrl("/leetcode"))
+    fetch(apiUrl("https://my-portfolio-iah4.onrender.com/leetcode"))
       .then((res) => res.json())
       .then((data: LeetcodeApiResponse) => {
         setLeetcodeStats(data);
@@ -803,7 +803,7 @@ export default function CodeStatsSection() {
   }, []);
 
   useEffect(() => {
-    fetch(apiUrl("/codechef"))
+    fetch(apiUrl("https://my-portfolio-iah4.onrender.com/codechef"))
       .then((res) => res.json())
       .then((data: CodechefApiResponse) => {
         setCodechefStats(data);

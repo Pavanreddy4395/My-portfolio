@@ -1,0 +1,10 @@
+# This folder is the frontend (Vite + React). It does NOT use pip.
+#
+# Frontend install (from repo root):
+#   npm install
+#
+# Python dependencies are for the FastAPI backend:
+#   cd ../backend
+#   python -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r requirements.txt

@@ -785,6 +785,8 @@ export default function CodeStatsSection() {
   const [leetcodeStats, setLeetcodeStats] = useState<LeetcodeApiResponse | null>(null);
   const [codechefStats, setCodechefStats] = useState<CodechefApiResponse | null>(null);
 
+  const isLoading = codeforcesStats === null || leetcodeStats === null || codechefStats === null;
+
   useEffect(() => {
     fetch(apiUrl("/codeforces"))
       .then((res) => res.json())
@@ -890,6 +892,21 @@ export default function CodeStatsSection() {
     }
     return out;
   }, [platforms]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-[calc(100vh-80px)] flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div
+            className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin"
+            role="status"
+            aria-label="Loading"
+          />
+          <div className="mt-3 text-sm font-mono text-muted-foreground">Fetching stats...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full overflow-x-hidden">

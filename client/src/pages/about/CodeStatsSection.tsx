@@ -828,9 +828,9 @@ export default function CodeStatsSection() {
       accent: "primary",
       stats: [
         { label: "Rank", value: "164086 (top 8%)" },
-        { label: "Rooms Completed", value: 74 },
-        { label: "Badges", value: 12 },
-        { label: "Streak", value: 94 },
+        { label: "Rooms Completed", value: 82 },
+        { label: "Badges", value: 13 },
+        { label: "Streak", value: 112 },
       ],
       historyBase: 900,
     },

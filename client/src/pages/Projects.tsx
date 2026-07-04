@@ -11,14 +11,14 @@ export default function Projects() {
       description:
         "Built a scalable E-Auction platform using Spring Boot and MongoDB, featuring JWT authentication, role-based access control, and real-time bidding with WebSockets. Contributed as a Backend Developer responsible for API development and system integration.",
       tags: ["Java", "Spring Boot", "MongoDB", "JWT", "WebSockets"],
-      links: { github: "https://github.com/Pavanreddy4395" },
+      links: { github: "https://github.com/Pavanreddy4395/auctions" },
     },
     {
       title: "MedMaxDel",
       description:
         "Developed MedMaxDel, a medicine ordering platform with recurring orders for chronic care patients, automated reminders, prescription uploads, and order tracking features, contributing primarily in a frontend development role.",
       tags: ["React", "JavaScript", "UI", "Product Work"],
-      links: { github: "https://github.com/Pavanreddy4395" },
+      links: { github: "https://github.com/Gowthamsai-k/MedMax_del" },
     }
   ];
 

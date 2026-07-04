@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Code2, Cpu, Network, Search, Server } from "lucide-react";
+import { skillGroups } from "@/pages/about/aboutData";
 import {
   SiC,
   SiFlask,
@@ -35,15 +36,11 @@ function getSkillIcon(skill: string): SkillIcon | null {
 }
 
 export default function SkillsSection() {
-  const skills = [
-    { category: "Programming", items: ["C", "Python", "Java", "JavaScript"], icon: Code2 },
-    { category: "Frameworks", items: ["Flask", "Spring Boot"], icon: Server },
-    {
-      category: "Tools",
-      items: ["Git", "GitHub", "Bash Scripting", "Wireshark", "Nmap", "Basic Networking"],
-      icon: Cpu,
-    },
-  ];
+  const skills = skillGroups.map((group) => {
+    if (group.category === "Programming") return { ...group, icon: Code2 };
+    if (group.category === "Frameworks") return { ...group, icon: Server };
+    return { ...group, icon: Cpu };
+  });
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

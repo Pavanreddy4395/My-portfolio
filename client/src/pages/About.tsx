@@ -1,5 +1,5 @@
 import { Section } from "@/components/Section";
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense } from "react";
 
 const EducationSection = lazy(() => import("@/pages/about/EducationSection"));
 const SkillsSection = lazy(() => import("@/pages/about/SkillsSection"));
@@ -7,36 +7,28 @@ const InternshipSection = lazy(() => import("@/pages/about/InternshipSection"));
 const AchievementsSection = lazy(() => import("@/pages/about/AchievementsSection"));
 const CertificationsSection = lazy(() => import("@/pages/about/CertificationsSection"));
 
-type AboutSectionId = "internships" | "education" | "skills" | "certifications" | "achievements";
-
-const FULL_BLEED_SECTIONS: AboutSectionId[] = [
-  "education",
-  "internships",
-  "certifications",
-  "achievements",
-  "skills",
-];
-
 export default function About() {
-  const sections = useMemo(
-    () =>
-      [
-        { id: "education" as const, label: "Education", Component: EducationSection },
-        { id: "skills" as const, label: "Technical Skills", Component: SkillsSection },
-        { id: "internships" as const, label: "Internships", Component: InternshipSection },
-        { id: "certifications" as const, label: "Certifications", Component: CertificationsSection },
-        { id: "achievements" as const, label: "Achievements & Leadership", Component: AchievementsSection },
-      ],
-    []
-  );
+  const sections = [
+    { id: "education" as const, label: "Education", Component: EducationSection },
+    { id: "skills" as const, label: "Technical Skills", Component: SkillsSection },
+    { id: "internships" as const, label: "Internships", Component: InternshipSection },
+    { id: "certifications" as const, label: "Certifications", Component: CertificationsSection },
+    { id: "achievements" as const, label: "Achievements & Leadership", Component: AchievementsSection },
+  ];
 
   return (
     <Section>
       <div className="space-y-10">
         <div className="space-y-6">
-          <h2 className="text-4xl md:text-5xl font-display font-bold">About Me</h2>
-          <div className="h-1 w-20 bg-primary/10 rounded-full" />
-          
+          <div className="relative">
+            <div className="flex items-start justify-between gap-6">
+              <div className="space-y-3">
+                <h2 className="text-4xl md:text-5xl font-display font-bold">About Me</h2>
+                <div className="h-1 w-20 bg-primary/10 rounded-full" />
+              </div>
+            </div>
+          </div>
+
           <div className="prose prose-lg text-muted-foreground leading-relaxed max-w-none">
             <p>
               I’m a Computer Science Engineering student focused on cybersecurity and practical, hands-on learning.
@@ -50,33 +42,16 @@ export default function About() {
         </div>
 
         <div className="space-y-10">
-          {sections.map(({ id, label, Component }) => {
-            const renderAsFullBleed = FULL_BLEED_SECTIONS.includes(id as AboutSectionId);
-
-            return (
-              <div key={id} id={id} className="scroll-mt-24">
-                {renderAsFullBleed ? (
-                  <div className="space-y-10">
-                    <h3 className="text-4xl md:text-5xl font-display font-bold text-center">{label}</h3>
-                    <Suspense fallback={<div className="h-[40vh] w-full" />}>
-                      <Component />
-                    </Suspense>
-                  </div>
-                ) : (
-                  <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
-                    <div className="flex items-center justify-between gap-3 border-b border-border/50 px-6 py-4">
-                      <h3 className="text-2xl font-display font-bold">{label}</h3>
-                    </div>
-                    <div className="p-6 sm:p-8">
-                      <Suspense fallback={<div className="h-[40vh] w-full" />}>
-                        <Component />
-                      </Suspense>
-                    </div>
-                  </div>
-                )}
+          {sections.map(({ id, label, Component }) => (
+            <div key={id} id={id} className="scroll-mt-24">
+              <div className="space-y-10">
+                <h3 className="text-4xl md:text-5xl font-display font-bold text-center">{label}</h3>
+                <Suspense fallback={<div className="h-[40vh] w-full" />}>
+                  <Component />
+                </Suspense>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </Section>
